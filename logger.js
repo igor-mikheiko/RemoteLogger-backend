@@ -6,8 +6,8 @@ var config = JSON.parse(fs.readFileSync('./logger.conf', 'utf8'));
 if (cluster.isMaster) {	
 	console.log('Booting...');	
 
-	if (!fs.existsSync('./logs')) {
-		fs.mkdirSync('./logs', 0777);
+	if (!fs.existsSync(config.logs_directory)) {
+		fs.mkdirSync(config.logs_directory, 0777);
 	}
 	
 	var maxNodes = 1;
@@ -46,7 +46,7 @@ if (cluster.isMaster) {
 	}
 
 	var llog = function (message) {
-		var err = fs.appendFileSync('./logger.log', message);
+		var err = fs.appendFileSync(config.logs_directory + '/logger.log', message);
 			
 		if (err) {
 			console.log(err.toString());
@@ -63,11 +63,11 @@ if (cluster.isMaster) {
 
 			llog(util.format('%s [%s]\tLast stat for device, warnings: %s, errors: %s\n', now(), req.params.udid, warnings, errors));
 			if (contains(config.watch, req.params.udid) && req.body.logs && req.body.logs.length > 0) {
-				if (!fs.existsSync('./logs/' + req.params.udid)) {
+				if (!fs.existsSync(config.logs_directory + '/' + req.params.udid)) {
 					res.send({get_logs:req.body.logs});
 				} else {
 					var logsToObtain = [];
-					var existingLogs = fs.readdirSync('./logs/' + req.params.udid);
+					var existingLogs = fs.readdirSync(config.logs_directory + '/' + req.params.udid);
 
 					for (var index in req.body.logs) {
 						if (req.body.logs[index].indexOf(".archived") < 0 || !contains(existingLogs, req.body.logs[index])) {
@@ -91,10 +91,10 @@ if (cluster.isMaster) {
 
 	app.post('/log/:udid', multipart(), function (req, res) {
 		if (req.files && req.files.log) {
-			var targetLogFilePath = './logs/' + req.params.udid + '/' + req.files.log.originalFilename;
+			var targetLogFilePath = config.logs_directory + '/' + req.params.udid + '/' + req.files.log.originalFilename;
 
-			if (!fs.existsSync('./logs/' + req.params.udid)) {
-				fs.mkdirSync('./logs/' + req.params.udid, 0777);
+			if (!fs.existsSync(config.logs_directory + '/' + req.params.udid)) {
+				fs.mkdirSync(config.logs_directory + '/' + req.params.udid, 0777);
 			} else {
 				if (fs.existsSync(targetLogFilePath)) {
 					fs.unlinkSync(targetLogFilePath)
